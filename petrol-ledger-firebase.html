@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Petrol Ledger 🔥 | पेट्रोल खाता बही</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fire: #FF4500;
+    --gold: #FFB800;
+    --dark: #0D0D0D;
+    --card: #1A1A1A;
+    --card2: #222;
+    --green: #00C853;
+    --red: #FF1744;
+    --blue: #00BFFF;
+    --text: #F0F0F0;
+    --muted: #888;
+    --border: #2e2e2e;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--dark); color:var(--text); font-family:'Baloo 2',sans-serif; min-height:100vh; }
+
+  #loader {
+    position:fixed; inset:0; background:var(--dark);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    z-index:999; gap:14px;
+  }
+  .loader-icon { font-size:3rem; animation:spin 1.2s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .loader-text { color:var(--muted); font-family:'Noto Sans Devanagari',sans-serif; font-size:0.88rem; }
+
+  header {
+    background:linear-gradient(135deg,#1a0a00,#2d1200);
+    border-bottom:3px solid var(--fire);
+    padding:13px 16px; display:flex; align-items:center; gap:12px;
+    position:sticky; top:0; z-index:100;
+    box-shadow:0 4px 30px rgba(255,69,0,0.25);
+  }
+  .logo { font-size:1.9rem; animation:flicker 2.5s infinite; }
+  @keyframes flicker { 0%,100%{opacity:1}55%{opacity:0.82} }
+  .header-title h1 { font-size:1.15rem; font-weight:800; color:var(--gold); }
+  .header-title p { font-size:0.68rem; color:var(--muted); font-family:'Noto Sans Devanagari',sans-serif; }
+  .header-right { margin-left:auto; display:flex; flex-direction:column; align-items:flex-end; gap:5px; }
+  .sync-badge {
+    display:flex; align-items:center; gap:5px;
+    border-radius:20px; padding:3px 10px; font-size:0.68rem;
+    background:rgba(0,200,83,0.12); border:1px solid rgba(0,200,83,0.3); color:var(--green);
+    transition:all 0.3s;
+  }
+  .sync-dot { width:6px; height:6px; border-radius:50%; background:var(--green); animation:pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+  .sync-badge.syncing { background:rgba(255,184,0,0.12); border-color:rgba(255,184,0,0.3); color:var(--gold); }
+  .sync-badge.syncing .sync-dot { background:var(--gold); }
+  .sync-badge.err { background:rgba(255,23,68,0.12); border-color:rgba(255,23,68,0.3); color:var(--red); }
+  .sync-badge.err .sync-dot { background:var(--red); animation:none; }
+  .header-date { font-size:0.68rem; color:var(--muted); text-align:right; }
+  .header-date b { display:block; color:var(--gold); font-size:0.88rem; }
+
+  .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:13px 13px 5px; }
+  .sum-card { background:var(--card); border-radius:12px; padding:13px 11px; border:1px solid var(--border); position:relative; overflow:hidden; }
+  .sum-card::before { content:''; position:absolute; top:0;left:0;right:0; height:3px; }
+  .sum-card.s::before { background:var(--gold); }
+  .sum-card.st::before { background:var(--blue); }
+  .sum-card.p::before { background:var(--green); }
+  .sum-card .icon { font-size:1.2rem; margin-bottom:3px; }
+  .sum-card .lbl { font-size:0.58rem; color:var(--muted); font-family:'Noto Sans Devanagari',sans-serif; line-height:1.3; }
+  .sum-card .val { font-size:1rem; font-weight:800; margin-top:2px; }
+  .sum-card.s .val { color:var(--gold); }
+  .sum-card.st .val { color:var(--blue); }
+  .sum-card.p .val { color:var(--green); }
+
+  .tabs { display:flex; gap:6px; padding:11px 13px 0; }
+  .tab {
+    flex:1; padding:8px 4px; border-radius:10px;
+    border:1px solid var(--border); background:var(--card);
+    color:var(--muted); font-family:'Baloo 2',sans-serif;
+    font-size:0.73rem; font-weight:600; cursor:pointer;
+    transition:all 0.2s; text-align:center; line-height:1.3;
+  }
+  .tab.active { background:var(--fire); color:#fff; border-color:var(--fire); box-shadow:0 4px 15px rgba(255,69,0,0.4); }
+
+  .section { padding:11px 13px; display:none; }
+  .section.active { display:block; }
+
+  .form-card { background:var(--card); border-radius:13px; padding:15px; border:1px solid var(--border); margin-bottom:13px; }
+  .form-card h3 { font-size:0.88rem; color:var(--gold); margin-bottom:13px; font-family:'Noto Sans Devanagari',sans-serif; display:flex; align-items:center; gap:6px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-bottom:9px; }
+  .fg { display:flex; flex-direction:column; gap:4px; }
+  .fg.full { grid-column:1/-1; }
+  label { font-size:0.62rem; color:var(--muted); font-family:'Noto Sans Devanagari',sans-serif; text-transform:uppercase; letter-spacing:0.4px; }
+  input, select {
+    background:var(--card2); border:1px solid var(--border);
+    border-radius:9px; padding:9px 11px; color:var(--text);
+    font-family:'Baloo 2',sans-serif; font-size:0.88rem;
+    outline:none; transition:border-color 0.2s; width:100%;
+  }
+  input:focus { border-color:var(--fire); box-shadow:0 0 0 3px rgba(255,69,0,0.12); }
+
+  .btn-add {
+    width:100%; padding:11px; background:linear-gradient(135deg,var(--fire),#ff6500);
+    color:#fff; border:none; border-radius:11px;
+    font-family:'Baloo 2',sans-serif; font-size:0.92rem; font-weight:700;
+    cursor:pointer; transition:all 0.2s; box-shadow:0 4px 14px rgba(255,69,0,0.3);
+  }
+  .btn-add:hover { transform:translateY(-1px); }
+  .btn-add:active { transform:translateY(0); }
+  .btn-add:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+  .table-card { background:var(--card); border-radius:13px; border:1px solid var(--border); overflow:hidden; }
+  .table-header { padding:13px 15px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+  .table-header h3 { font-size:0.85rem; color:var(--gold); font-family:'Noto Sans Devanagari',sans-serif; }
+  .rc { background:var(--fire); color:#fff; font-size:0.65rem; padding:2px 8px; border-radius:20px; font-weight:700; }
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:0.76rem; }
+  thead th { background:#111; padding:8px 11px; text-align:left; color:var(--muted); font-size:0.62rem; text-transform:uppercase; letter-spacing:0.4px; white-space:nowrap; }
+  tbody tr { border-bottom:1px solid var(--border); transition:background 0.15s; }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:rgba(255,69,0,0.05); }
+  tbody td { padding:9px 11px; white-space:nowrap; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:20px; font-size:0.66rem; font-weight:700; }
+  .badge.profit { background:rgba(0,200,83,0.15); color:var(--green); }
+  .badge.loss { background:rgba(255,23,68,0.15); color:var(--red); }
+  .del-btn { background:rgba(255,23,68,0.1); color:var(--red); border:none; padding:3px 8px; border-radius:7px; cursor:pointer; font-size:0.68rem; font-family:'Baloo 2',sans-serif; }
+  .del-btn:hover { background:rgba(255,23,68,0.25); }
+  .empty-state { text-align:center; padding:28px 14px; color:var(--muted); font-family:'Noto Sans Devanagari',sans-serif; font-size:0.82rem; }
+  .empty-state .e { font-size:1.8rem; display:block; margin-bottom:7px; }
+
+  .pl-summary { display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-bottom:13px; }
+  .pl-card { background:var(--card); border-radius:12px; padding:16px; border:1px solid var(--border); text-align:center; }
+  .pl-card .pi { font-size:1.5rem; margin-bottom:5px; }
+  .pl-card .pl { font-size:0.64rem; color:var(--muted); font-family:'Noto Sans Devanagari',sans-serif; margin-bottom:3px; }
+  .pl-card .pv { font-size:1.25rem; font-weight:800; }
+  .pl-card.g .pv { color:var(--green); }
+  .pl-card.r .pv { color:var(--red); }
+  .net-card { border-radius:12px; padding:18px; border:2px solid; text-align:center; margin-bottom:13px; }
+  .net-card.pn { border-color:var(--green); background:rgba(0,200,83,0.06); }
+  .net-card.ln { border-color:var(--red); background:rgba(255,23,68,0.06); }
+  .net-card .nl { font-size:0.74rem; color:var(--muted); font-family:'Noto Sans Devanagari',sans-serif; margin-bottom:3px; }
+  .net-card .nv { font-size:1.9rem; font-weight:800; }
+  .net-card.pn .nv { color:var(--green); }
+  .net-card.ln .nv { color:var(--red); }
+
+  .stock-bar-bg { background:var(--border); border-radius:8px; height:9px; overflow:hidden; margin-top:5px; }
+  .stock-bar-fill { height:100%; border-radius:8px; background:linear-gradient(90deg,var(--fire),var(--gold)); transition:width 0.5s; }
+
+  .toast {
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(80px);
+    background:#222; border:1px solid var(--border); border-radius:11px;
+    padding:9px 18px; font-size:0.8rem; color:var(--text);
+    box-shadow:0 8px 30px rgba(0,0,0,0.5); z-index:9999;
+    transition:transform 0.3s; white-space:nowrap;
+  }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+
+  @media(max-width:400px){
+    .summary{grid-template-columns:1fr 1fr;}
+    .form-row{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="loader-icon">⛽</div>
+  <div class="loader-text">Firebase से डेटा आ रहा है... Loading</div>
+</div>
+
+<header>
+  <div class="logo">⛽</div>
+  <div class="header-title">
+    <h1>PETROL LEDGER</h1>
+    <p>पेट्रोल खाता बही 🔥 Live Sync</p>
+  </div>
+  <div class="header-right">
+    <div class="sync-badge" id="syncBadge">
+      <div class="sync-dot"></div>
+      <span id="syncText">Live</span>
+    </div>
+    <div class="header-date">
+      <b id="todayDate"></b>
+      <span id="todayDay"></span>
+    </div>
+  </div>
+</header>
+
+<div class="summary">
+  <div class="sum-card s"><div class="icon">💰</div><div class="lbl">आज बिक्री<br>Today</div><div class="val" id="todaySales">₹0</div></div>
+  <div class="sum-card st"><div class="icon">🛢️</div><div class="lbl">स्टॉक बचा<br>Stock</div><div class="val" id="stockLeft">0 L</div></div>
+  <div class="sum-card p"><div class="icon">📈</div><div class="lbl">कुल मुनाफा<br>Profit</div><div class="val" id="totalProfit">₹0</div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('sales',this)">🛒 बिक्री<br><small>Sales</small></button>
+  <button class="tab" onclick="switchTab('stock',this)">🛢️ स्टॉक<br><small>Stock</small></button>
+  <button class="tab" onclick="switchTab('pl',this)">📊 मुनाफा<br><small>P&L</small></button>
+</div>
+
+<!-- SALES -->
+<div class="section active" id="tab-sales">
+  <div class="form-card">
+    <h3>➕ नई बिक्री | Add Sale</h3>
+    <div class="form-row">
+      <div class="fg"><label>तारीख | Date</label><input type="date" id="saleDate"></div>
+      <div class="fg"><label>लीटर | Litres</label><input type="number" id="saleLitres" placeholder="0.00" step="0.01" min="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>बिक्री ₹/L</label><input type="number" id="salePrice" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="fg"><label>लागत ₹/L</label><input type="number" id="costPrice" placeholder="0.00" step="0.01" min="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="fg full"><label>नोट | Note</label><input type="text" id="saleNote" placeholder="जैसे: सुबह की बिक्री"></div>
+    </div>
+    <button class="btn-add" id="btnSale" onclick="addSale()">✅ बिक्री जोड़ें</button>
+  </div>
+  <div class="table-card">
+    <div class="table-header"><h3>📋 बिक्री रिकॉर्ड</h3><span class="rc" id="salesCount">0</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>तारीख</th><th>लीटर</th><th>बिक्री ₹</th><th>लागत ₹</th><th>मुनाफा</th><th>नोट</th><th></th></tr></thead>
+        <tbody id="salesTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- STOCK -->
+<div class="section" id="tab-stock">
+  <div class="form-card">
+    <h3>🛢️ स्टॉक जोड़ें | Add Stock</h3>
+    <div class="form-row">
+      <div class="fg"><label>तारीख | Date</label><input type="date" id="stockDate"></div>
+      <div class="fg"><label>लीटर | Litres</label><input type="number" id="stockLitres" placeholder="0.00" step="0.01" min="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="fg"><label>खरीद ₹/L</label><input type="number" id="stockPP" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="fg"><label>कुल लागत ₹</label><input type="number" id="stockTC" placeholder="Auto" readonly style="opacity:0.5"></div>
+    </div>
+    <div class="form-row">
+      <div class="fg full"><label>Supplier</label><input type="text" id="stockSup" placeholder="IOC, BPCL, HP..."></div>
+    </div>
+    <button class="btn-add" id="btnStock" onclick="addStock()">✅ स्टॉक जोड़ें</button>
+  </div>
+  <div class="form-card" style="margin-bottom:13px">
+    <h3>📊 स्टॉक स्थिति</h3>
+    <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:3px">
+      <span style="color:var(--muted)">बचा | Remaining</span>
+      <span style="color:var(--blue);font-weight:700" id="stockMeter">0 / 0 L</span>
+    </div>
+    <div class="stock-bar-bg"><div class="stock-bar-fill" id="stockBar" style="width:0%"></div></div>
+    <div style="display:flex;justify-content:space-between;margin-top:9px;font-size:0.72rem;color:var(--muted)">
+      <span>खरीदा: <b style="color:var(--text)" id="totalIn">0 L</b></span>
+      <span>बिका: <b style="color:var(--text)" id="totalOut">0 L</b></span>
+    </div>
+  </div>
+  <div class="table-card">
+    <div class="table-header"><h3>🛢️ स्टॉक रिकॉर्ड</h3><span class="rc" id="stockCount">0</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>तारीख</th><th>लीटर</th><th>₹/L</th><th>कुल लागत</th><th>Supplier</th><th></th></tr></thead>
+        <tbody id="stockTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- P&L -->
+<div class="section" id="tab-pl">
+  <div class="pl-summary">
+    <div class="pl-card g"><div class="pi">💚</div><div class="pl">कुल आमदनी<br>Revenue</div><div class="pv" id="plRev">₹0</div></div>
+    <div class="pl-card r"><div class="pi">❤️</div><div class="pl">कुल लागत<br>Cost</div><div class="pv" id="plCost">₹0</div></div>
+  </div>
+  <div class="net-card pn" id="netCard">
+    <div class="nl" id="netLabel">शुद्ध मुनाफा | Net Profit</div>
+    <div class="nv" id="netVal">₹0</div>
+  </div>
+  <div class="table-card">
+    <div class="table-header"><h3>📅 दिनांकवार P&L</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>तारीख</th><th>बिक्री ₹</th><th>लागत ₹</th><th>मुनाफा/नुकसान</th></tr></thead>
+        <tbody id="plTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ─── Firebase Config ──────────────────────────────
+  const firebaseConfig = {
+    apiKey: "AIzaSyA9H0UqhH2jhbHqYzHqFmXgJuUsnsTJ25E",
+    authDomain: "petrol-ledger.firebaseapp.com",
+    databaseURL: "https://petrol-ledger-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "petrol-ledger",
+    storageBucket: "petrol-ledger.firebasestorage.app",
+    messagingSenderId: "837862574352",
+    appId: "1:837862574352:web:06eb76e3f75da86e147d95"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+
+  // ─── State ────────────────────────────────────────
+  let sales  = {};
+  let stocks = {};
+
+  // ─── Date ─────────────────────────────────────────
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0,10);
+  document.getElementById('todayDate').textContent = today.toLocaleDateString('hi-IN');
+  document.getElementById('todayDay').textContent  = today.toLocaleDateString('en-IN',{weekday:'long'});
+  document.getElementById('saleDate').value  = todayStr;
+  document.getElementById('stockDate').value = todayStr;
+
+  // ─── Sync badge ───────────────────────────────────
+  function setSyncing() {
+    const b=document.getElementById('syncBadge'), t=document.getElementById('syncText');
+    b.className='sync-badge syncing'; t.textContent='Saving...';
+  }
+  function setLive() {
+    const b=document.getElementById('syncBadge'), t=document.getElementById('syncText');
+    b.className='sync-badge'; t.textContent='Live ✓';
+  }
+  function setErr() {
+    const b=document.getElementById('syncBadge'), t=document.getElementById('syncText');
+    b.className='sync-badge err'; t.textContent='Error!';
+  }
+
+  // ─── Toast ────────────────────────────────────────
+  let tt;
+  function toast(msg) {
+    const el=document.getElementById('toast');
+    el.textContent=msg; el.className='toast show';
+    clearTimeout(tt); tt=setTimeout(()=>el.className='toast',2500);
+  }
+
+  // ─── Format ───────────────────────────────────────
+  function fmt(n){ return '₹'+parseFloat(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+  // ─── Tab ──────────────────────────────────────────
+  window.switchTab = function(t,btn){
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+t).classList.add('active');
+  };
+
+  // ─── Auto cost ────────────────────────────────────
+  document.getElementById('stockLitres').addEventListener('input',calcTC);
+  document.getElementById('stockPP').addEventListener('input',calcTC);
+  function calcTC(){
+    const l=parseFloat(document.getElementById('stockLitres').value)||0;
+    const p=parseFloat(document.getElementById('stockPP').value)||0;
+    document.getElementById('stockTC').value=(l&&p)?(l*p).toFixed(2):'';
+  }
+
+  // ─── Add Sale ─────────────────────────────────────
+  window.addSale = async function(){
+    const date  = document.getElementById('saleDate').value;
+    const litres= parseFloat(document.getElementById('saleLitres').value);
+    const saleP = parseFloat(document.getElementById('salePrice').value);
+    const costP = parseFloat(document.getElementById('costPrice').value);
+    const note  = document.getElementById('saleNote').value.trim();
+    if(!date||!litres||!saleP||!costP){ toast('❌ सभी जानकारी भरें!'); return; }
+    const btn=document.getElementById('btnSale');
+    btn.disabled=true; btn.textContent='⏳ Saving...';
+    setSyncing();
+    const id=Date.now();
+    const revenue=litres*saleP, cost=litres*costP, profit=revenue-cost;
+    try {
+      await set(ref(db,`sales/${id}`),{date,litres,saleP,costP,revenue,cost,profit,note,id});
+      document.getElementById('saleLitres').value='';
+      document.getElementById('saleNote').value='';
+      toast('✅ बिक्री जुड़ गई!');
+      setLive();
+    } catch(e){ toast('❌ Error: '+e.message); setErr(); }
+    btn.disabled=false; btn.textContent='✅ बिक्री जोड़ें';
+  };
+
+  // ─── Add Stock ────────────────────────────────────
+  window.addStock = async function(){
+    const date   =document.getElementById('stockDate').value;
+    const litres =parseFloat(document.getElementById('stockLitres').value);
+    const price  =parseFloat(document.getElementById('stockPP').value);
+    const supplier=document.getElementById('stockSup').value.trim()||'-';
+    if(!date||!litres||!price){ toast('❌ सभी जानकारी भरें!'); return; }
+    const btn=document.getElementById('btnStock');
+    btn.disabled=true; btn.textContent='⏳ Saving...';
+    setSyncing();
+    const id=Date.now();
+    try {
+      await set(ref(db,`stocks/${id}`),{date,litres,price,totalCost:litres*price,supplier,id});
+      document.getElementById('stockLitres').value='';
+      document.getElementById('stockPP').value='';
+      document.getElementById('stockTC').value='';
+      document.getElementById('stockSup').value='';
+      toast('✅ स्टॉक जुड़ गया!');
+      setLive();
+    } catch(e){ toast('❌ Error: '+e.message); setErr(); }
+    btn.disabled=false; btn.textContent='✅ स्टॉक जोड़ें';
+  };
+
+  // ─── Delete ───────────────────────────────────────
+  window.delSale = async function(id){
+    if(!confirm('हटाएं? Delete?')) return;
+    setSyncing();
+    await remove(ref(db,`sales/${id}`));
+    toast('🗑️ बिक्री हटाई'); setLive();
+  };
+  window.delStock = async function(id){
+    if(!confirm('हटाएं? Delete?')) return;
+    setSyncing();
+    await remove(ref(db,`stocks/${id}`));
+    toast('🗑️ स्टॉक हटाया'); setLive();
+  };
+
+  // ─── Render ───────────────────────────────────────
+  function render(){
+    const salesArr  = Object.values(sales);
+    const stocksArr = Object.values(stocks);
+
+    // Summary
+    const todayRev   = salesArr.filter(s=>s.date===todayStr).reduce((a,s)=>a+s.revenue,0);
+    const totalProfit= salesArr.reduce((a,s)=>a+s.profit,0);
+    const totalInL   = stocksArr.reduce((a,s)=>a+s.litres,0);
+    const totalOutL  = salesArr.reduce((a,s)=>a+s.litres,0);
+    const rem        = Math.max(0,totalInL-totalOutL);
+    document.getElementById('todaySales').textContent  = fmt(todayRev);
+    document.getElementById('stockLeft').textContent   = rem.toFixed(1)+' L';
+    document.getElementById('totalProfit').textContent = fmt(totalProfit);
+    document.getElementById('totalProfit').style.color = totalProfit>=0?'var(--green)':'var(--red)';
+
+    // Sales table
+    document.getElementById('salesCount').textContent = salesArr.length;
+    const stb = document.getElementById('salesTable');
+    if(!salesArr.length){
+      stb.innerHTML='<tr><td colspan="7"><div class="empty-state"><span class="e">📝</span>अभी कोई बिक्री नहीं</div></td></tr>';
+    } else {
+      stb.innerHTML=[...salesArr].sort((a,b)=>b.date.localeCompare(a.date)).map(s=>`
+        <tr>
+          <td>${s.date}</td><td>${s.litres}L</td>
+          <td>${fmt(s.revenue)}</td><td>${fmt(s.cost)}</td>
+          <td><span class="badge ${s.profit>=0?'profit':'loss'}">${s.profit>=0?'+':''}${fmt(s.profit)}</span></td>
+          <td style="color:var(--muted)">${s.note||'-'}</td>
+          <td><button class="del-btn" onclick="delSale(${s.id})">✕</button></td>
+        </tr>`).join('');
+    }
+
+    // Stock table
+    document.getElementById('stockCount').textContent = stocksArr.length;
+    document.getElementById('stockMeter').textContent = rem.toFixed(1)+' / '+totalInL.toFixed(1)+' L';
+    document.getElementById('stockBar').style.width   = (totalInL?(rem/totalInL*100):0).toFixed(1)+'%';
+    document.getElementById('totalIn').textContent    = totalInL.toFixed(1)+' L';
+    document.getElementById('totalOut').textContent   = totalOutL.toFixed(1)+' L';
+    const ktb = document.getElementById('stockTable');
+    if(!stocksArr.length){
+      ktb.innerHTML='<tr><td colspan="6"><div class="empty-state"><span class="e">🛢️</span>अभी कोई स्टॉक नहीं</div></td></tr>';
+    } else {
+      ktb.innerHTML=[...stocksArr].sort((a,b)=>b.date.localeCompare(a.date)).map(s=>`
+        <tr>
+          <td>${s.date}</td><td>${s.litres}L</td>
+          <td>₹${s.price}</td><td>${fmt(s.totalCost)}</td>
+          <td style="color:var(--muted)">${s.supplier}</td>
+          <td><button class="del-btn" onclick="delStock(${s.id})">✕</button></td>
+        </tr>`).join('');
+    }
+
+    // P&L
+    const totalRev  = salesArr.reduce((a,s)=>a+s.revenue,0);
+    const totalCost = salesArr.reduce((a,s)=>a+s.cost,0);
+    const net = totalRev-totalCost;
+    document.getElementById('plRev').textContent  = fmt(totalRev);
+    document.getElementById('plCost').textContent = fmt(totalCost);
+    document.getElementById('netVal').textContent = (net>=0?'+':'')+fmt(net);
+    document.getElementById('netCard').className  = 'net-card '+(net>=0?'pn':'ln');
+    document.getElementById('netLabel').textContent = net>=0?'शुद्ध मुनाफा | Net Profit':'शुद्ध नुकसान | Net Loss';
+    const byDate={};
+    salesArr.forEach(s=>{
+      if(!byDate[s.date]) byDate[s.date]={revenue:0,cost:0,profit:0};
+      byDate[s.date].revenue+=s.revenue; byDate[s.date].cost+=s.cost; byDate[s.date].profit+=s.profit;
+    });
+    const ptb=document.getElementById('plTable');
+    const dates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+    ptb.innerHTML=dates.length?dates.map(d=>`
+      <tr>
+        <td>${d}</td><td>${fmt(byDate[d].revenue)}</td><td>${fmt(byDate[d].cost)}</td>
+        <td><span class="badge ${byDate[d].profit>=0?'profit':'loss'}">${byDate[d].profit>=0?'+':''}${fmt(byDate[d].profit)}</span></td>
+      </tr>`).join('')
+      :'<tr><td colspan="4"><div class="empty-state"><span class="e">📊</span>अभी कोई डेटा नहीं</div></td></tr>';
+  }
+
+  // ─── Live listeners ───────────────────────────────
+  onValue(ref(db,'sales'), snap=>{
+    sales = snap.val() || {};
+    render();
+    document.getElementById('loader').style.display='none';
+    setLive();
+  }, err=>{ setErr(); document.getElementById('loader').style.display='none'; });
+
+  onValue(ref(db,'stocks'), snap=>{
+    stocks = snap.val() || {};
+    render();
+  });
+</script>
+</body>
+</html>
